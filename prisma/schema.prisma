@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider  = "postgresql"
+    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
+    // Further reading:
+    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
+    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
+}
+
+model Post {
+    id        Int      @id @default(autoincrement())
+    name      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    createdBy   User   @relation(fields: [createdById], references: [id])
+    createdById String
+
+    @@index([name])
+}
+
+enum ContentCategory {
+    NOVEL
+    WEBTOON
+    GAME
+    ANIME
+    MOVIE
+    MUSIC
+    COMIC
+    OTHER
+}
+
+model Content {
+    id          String          @id @default(cuid())
+    title       String
+    category    ContentCategory
+    year        String?
+    platform    String?
+    description String
+    artists     Json            // string[] 배열
+    aliases     Json            // string[] 배열  
+    tags        Json            // string[] 배열
+    image       String?         // 이미지 URL (나중에 업로드 구현)
+    
+    // 위키 스타일 버전 관리
+    version       Int      @default(1)
+    lastEditedAt  DateTime @default(now()) @updatedAt
+    
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    
+    // 관계
+    createdBy     User   @relation("ContentCreatedBy", fields: [createdById], references: [id])
+    createdById   String
+    lastEditedBy  User   @relation("ContentLastEditedBy", fields: [lastEditedById], references: [id])
+    lastEditedById String
+    
+    // 버전 히스토리
+    versions ContentVersion[]
+
+    @@index([title])
+    @@index([category])
+    @@index([lastEditedAt])
+}
+
+// 컨텐츠 수정 이력 테이블 (위키 스타일)
+model ContentVersion {
+    id          String          @id @default(cuid())
+    contentId   String
+    version     Int
+    
+    // 해당 버전의 내용 (스냅샷)
+    title       String
+    category    ContentCategory
+    year        String?
+    platform    String?
+    description String
+    artists     Json
+    aliases     Json
+    tags        Json
+    image       String?
+    
+    // 수정 정보
+    editedAt    DateTime @default(now())
+    editedBy    User     @relation(fields: [editedById], references: [id])
+    editedById  String
+    editReason  String?  // 수정 사유 (선택사항)
+    
+    // 관계
+    content     Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+    
+    @@unique([contentId, version])
+    @@index([contentId])
+    @@index([editedAt])
+}
+
+// Necessary for Next auth
+model Account {
+    id                       String  @id @default(cuid())
+    userId                   String
+    type                     String
+    provider                 String
+    providerAccountId        String
+    refresh_token            String? // @db.Text
+    access_token             String? // @db.Text
+    expires_at               Int?
+    token_type               String?
+    scope                    String?
+    id_token                 String? // @db.Text
+    session_state            String?
+    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    refresh_token_expires_in Int?
+
+    @@unique([provider, providerAccountId])
+}
+
+model Session {
+    id           String   @id @default(cuid())
+    sessionToken String   @unique
+    userId       String
+    expires      DateTime
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+    id            String    @id @default(cuid())
+    name          String?
+    email         String?   @unique
+    emailVerified DateTime?
+    image         String?
+    accounts      Account[]
+    sessions      Session[]
+    posts         Post[]
+    
+    // 컨텐츠 관계 (위키 스타일)
+    contentsCreated     Content[] @relation("ContentCreatedBy")
+    contentsLastEdited  Content[] @relation("ContentLastEditedBy")
+    contentVersions     ContentVersion[]
+}
+
+model VerificationToken {
+    identifier String
+    token      String   @unique
+    expires    DateTime
+
+    @@unique([identifier, token])
+}

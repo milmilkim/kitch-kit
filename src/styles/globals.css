@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: var(--primary);
+  --gradient-header: var(--header-gradient);
+}
+
+:root {
+  --primary: oklch(0.606 0.25 292.717);
+  
+  /* Header Gradient Colors */
+  --header-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --header-gradient-start: #667eea;
+  --header-gradient-end: #764ba2;
+}
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+}
+
+@layer components {
+  .header-gradient {
+    background: var(--header-gradient);
+    color: white;
+  }
+  
+  .header-hover {
+    @apply hover:bg-white/10 hover:text-purple-100;
+  }
+  
+  .header-button {
+    @apply rounded-md px-3 py-1 text-sm text-white transition-all duration-200;
+  }
+}
