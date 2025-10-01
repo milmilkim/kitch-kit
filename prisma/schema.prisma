@@ -36,6 +36,8 @@ enum ContentCategory {
     MUSIC
     COMIC
     OTHER
+    DRAMA
+    BOOK
 }
 
 model Content {
@@ -45,9 +47,9 @@ model Content {
     year        String?
     platform    String?
     description String
-    artists     Json            // string[] 배열
-    aliases     Json            // string[] 배열  
-    tags        Json            // string[] 배열
+    artists     Json           
+    aliases     Json           
+    tags        Json            
     image       String?         // 이미지 URL (나중에 업로드 구현)
     
     // 위키 스타일 버전 관리

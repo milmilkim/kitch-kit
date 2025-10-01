@@ -3,7 +3,7 @@ import "@/styles/globals.css";
 import { type Metadata } from "next";
 import { Noto_Sans } from "next/font/google";
 
-import Providers from "./_components/Providers";
+import Providers from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "Kitsch-Kit",
@@ -20,8 +20,12 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko" className={`${notosans.variable}`}>
-      <body suppressHydrationWarning={true}>
+    <html
+      suppressHydrationWarning={true}
+      lang="ko"
+      className={`${notosans.variable}`}
+    >
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>
