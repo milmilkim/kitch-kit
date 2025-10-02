@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type { ContentCategory } from "@prisma/client";
-import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
 const categories: {
@@ -55,7 +54,7 @@ export default function ContentDetailPage() {
           <div className="flex min-h-[400px] flex-col items-center justify-center">
             <div className="mb-4 text-6xl">❌</div>
             <div className="mb-4 text-xl text-gray-500">
-              {error?.message || "컨텐츠를 찾을 수 없습니다."}
+              {error?.message ?? "컨텐츠를 찾을 수 없습니다."}
             </div>
             <Link href="/contents">
               <Button variant="secondary">목록으로 돌아가기</Button>
