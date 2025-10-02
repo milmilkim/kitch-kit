@@ -18,6 +18,7 @@ export const contentRouter = createTRPCRouter({
           tags: input.tags ?? [],
           createdBy: { connect: { id: ctx.session.user.id } },
           lastEditedBy: { connect: { id: ctx.session.user.id } },
+          image: input.image ?? undefined,
         },
       });
     }),

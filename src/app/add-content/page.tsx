@@ -12,12 +12,13 @@ import { type z } from "zod";
 import { CreateContentSchema } from "@/lib/validators/content";
 import type { ContentCategory } from "@prisma/client";
 import { cn } from "@/lib/utils";
+import FileUpload from "@/components/file-upload";
 
 const categories: { id: ContentCategory; name: string; icon: string }[] = [
   { id: "NOVEL", name: "웹소설", icon: "📚" },
   //   { id: "drama", name: "드라마", icon: "📺" },
   { id: "WEBTOON", name: "웹툰", icon: "🎨" },
-  // { id: "comic", name: "만화", icon: "💥" },
+  { id: "COMIC", name: "만화", icon: "💥" },
   //   { id: "movie", name: "영화", icon: "🎬" },
   //   { id: "music", name: "음반", icon: "🎵" },
   //   { id: "book", name: "도서", icon: "📖" },
@@ -60,7 +61,7 @@ const categoryFields: Partial<
 
 export default function AddContentPage() {
   const router = useRouter();
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const formSchema = CreateContentSchema;
 
@@ -76,10 +77,46 @@ export default function AddContentPage() {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log("onSubmit");
-    console.log(data);
-    // createContent.mutate(submitData);
+  const getPresignedUrl = api.upload.getPresignedUrl.useMutation();
+
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    try {
+      let imageKey: string | undefined;
+
+      // 1. 파일이 있으면 먼저 업로드
+      if (selectedFile) {
+        // Presigned URL 받기
+        const { presignedUrl, key } = await getPresignedUrl.mutateAsync({
+          fileName: selectedFile.name,
+          fileType: selectedFile.type,
+          fileSize: selectedFile.size,
+        });
+
+        // R2에 직접 업로드
+        const uploadResponse = await fetch(presignedUrl, {
+          method: "PUT",
+          body: selectedFile,
+          headers: { "Content-Type": selectedFile.type },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("이미지 업로드 실패");
+        }
+
+        imageKey = key;
+      }
+
+      // 2. 컨텐츠 생성
+      const submitData = {
+        ...data,
+        image: imageKey,
+      };
+
+      createContent.mutate(submitData);
+    } catch (error) {
+      alert("업로드 중 오류가 발생했습니다.");
+      console.error(error);
+    }
   };
 
   const selectedCategory = form.watch("category") ?? "NOVEL";
@@ -98,28 +135,29 @@ export default function AddContentPage() {
   const currentFields =
     categoryFields[selectedCategory as keyof typeof categoryFields];
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const { fields: artistsFields, append: appendArtists, remove: removeArtists } = useFieldArray({
+  const {
+    fields: artistsFields,
+    append: appendArtists,
+    remove: removeArtists,
+  } = useFieldArray({
     name: "artists",
     control: form.control,
   });
 
-  const { fields: aliasesFields, append: appendAliases, remove: removeAliases } = useFieldArray({
+  const {
+    fields: aliasesFields,
+    append: appendAliases,
+    remove: removeAliases,
+  } = useFieldArray({
     name: "aliases",
     control: form.control,
   });
 
-  const { fields: tagsFields, append: appendTags, remove: removeTags } = useFieldArray({
+  const {
+    fields: tagsFields,
+    append: appendTags,
+    remove: removeTags,
+  } = useFieldArray({
     name: "tags",
     control: form.control,
   });
@@ -188,51 +226,7 @@ export default function AddContentPage() {
                   </div>
                 </div>
 
-                {/* 이미지 업로드 */}
-                {/* <div>
-                  <label className="mb-3 block text-sm font-semibold text-gray-700">
-                    표지/포스터 이미지
-                  </label>
-                  <div
-                    className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                      imagePreview
-                        ? "border-primary bg-gray-50"
-                        : "hover:border-primary border-gray-300"
-                    }`}
-                    onClick={() =>
-                      document.getElementById("imageInput")?.click()
-                    }
-                  >
-                    {imagePreview ? (
-                      <div>
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="mx-auto mb-3 max-h-48 max-w-48 rounded-lg"
-                        />
-                        <div className="text-sm text-gray-600">
-                          클릭하여 이미지 변경
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="mb-3 text-4xl text-gray-400">📷</div>
-                        <div className="text-gray-600">
-                          클릭하여 이미지 업로드
-                          <br />
-                          <small>JPG, PNG 파일 (최대 5MB)</small>
-                        </div>
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      id="imageInput"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-                  </div>
-                </div> */}
+                <FileUpload onFileSelect={setSelectedFile} />
 
                 {/* 기본 정보 */}
                 <div>
@@ -274,13 +268,12 @@ export default function AddContentPage() {
                           id="artist"
                           type="text"
                           placeholder={`${currentFields!.creatorLabel} 이름을 입력하세요`}
-                          {...form.register(`artists.${index}`)}
+                          {...form.register(`artists.${index}.value`)}
                         />
                         <button
                           type="button"
                           onClick={() => {
                             removeArtists(index);
-                            
                           }}
                           className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-red-200 text-red-500 transition-colors hover:border-red-300 hover:bg-red-50"
                         >
@@ -323,14 +316,12 @@ export default function AddContentPage() {
                         <Input
                           id="alias"
                           type="text"
-                          {...form.register(`aliases.${index}`)}
+                          {...form.register(`aliases.${index}.value`)}
                           placeholder="별칭을 입력하세요 (예: 전독시, Omniscient Reader)"
                         />
                         <button
                           type="button"
-                          onClick={() =>
-                            removeAliases(index)
-                          }
+                          onClick={() => removeAliases(index)}
                           className="flex h-12 w-12 items-center justify-center rounded-lg border-2 border-red-200 text-red-500 transition-colors hover:border-red-300 hover:bg-red-50"
                         >
                           ×

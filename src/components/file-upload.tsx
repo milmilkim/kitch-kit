@@ -1,154 +1,78 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState, useRef } from "react";
-import { api } from "@/trpc/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { env } from "@/env";
+import { useState } from "react";
 
 interface FileUploadProps {
-  onUploadComplete?: (fileName: string, url: string) => void;
-  accept?: string;
-  maxSize?: number; // MB
+  onFileSelect: (file: File | null) => void;
 }
 
-export function FileUpload({
-  onUploadComplete,
-  accept = "*/*",
-  maxSize = 10,
-}: FileUploadProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+const FileUpload = ({ onFileSelect }: FileUploadProps) => {
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const getPresignedUrl = api.upload.getPresignedUrl.useMutation();
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // 파일 크기 체크
-    if (file.size > maxSize * 1024 * 1024) {
-      alert(`파일 크기는 ${maxSize}MB를 초과할 수 없습니다.`);
+    // 파일 크기 체크 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert("파일 크기는 10MB 이하여야 합니다.");
       return;
     }
 
-    setSelectedFile(file);
-  };
+    // 부모에게 파일 전달
+    onFileSelect(file);
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-
-    setUploading(true);
-    setUploadProgress(0);
-
-    try {
-      const { presignedUrl, key } = await getPresignedUrl.mutateAsync({
-        fileName: selectedFile.name,
-        fileType: selectedFile.type,
-        fileSize: selectedFile.size,
-      });
-
-      console.log('key: ', key);
-
-      const response = await fetch(presignedUrl, {
-        method: "PUT",
-        body: selectedFile,
-        headers: {
-          "Content-Type": selectedFile.type,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("파일 업로드에 실패했습니다.");
-      }
-
-      const url = `${env.NEXT_PUBLIC_R2_PUBLIC_URL}/${key}`;
-
-      setUploadProgress(100);
-
-      // 4. 콜백 함수 호출
-      onUploadComplete?.(selectedFile.name, url);
-
-      // 5. 상태 초기화
-      setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (error) {
-      console.error("업로드 에러:", error);
-      alert("파일 업로드에 실패했습니다.");
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    // 미리보기 생성
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Input
-          ref={fileInputRef}
-          type="file"
-          onChange={handleFileSelect}
-          accept={accept}
-          className="cursor-pointer"
-        />
-        <p className="mt-1 text-sm text-gray-500">
-          최대 {maxSize}MB까지 업로드 가능합니다.
-        </p>
-      </div>
-
-      {selectedFile && (
-        <div className="space-y-3 rounded-lg border p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">{selectedFile.name}</p>
-              <p className="text-sm text-gray-500">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRemoveFile}
-              disabled={uploading}
-            >
-              제거
-            </Button>
+    <div>
+      <label className="mb-3 block text-sm font-semibold text-gray-700">
+        표지/포스터 이미지
+      </label>
+      <div
+        className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+          imagePreview
+            ? "border-primary bg-gray-50"
+            : "hover:border-primary border-gray-300"
+        }`}
+        onClick={() => document.getElementById("imageInput")?.click()}
+      >
+        {imagePreview ? (
+          <div>
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="mx-auto mb-3 max-h-48 max-w-48 rounded-lg"
+            />
+            <div className="text-sm text-gray-600">클릭하여 이미지 변경</div>
           </div>
-
-          {uploading && (
-            <div className="space-y-2">
-              <div className="h-2 w-full rounded-full bg-gray-200">
-                <div
-                  className="h-2 rounded-full bg-blue-600 transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-              <p className="text-sm text-gray-600">
-                업로드 중... {uploadProgress}%
-              </p>
+        ) : (
+          <>
+            <div className="mb-3 text-4xl text-gray-400">📷</div>
+            <div className="text-gray-600">
+              클릭하여 이미지 업로드
+              <br />
+              <small>이미지 파일 (최대 10MB)</small>
             </div>
-          )}
-
-          <Button
-            onClick={handleUpload}
-            disabled={uploading}
-            className="w-full"
-          >
-            {uploading ? "업로드 중..." : "업로드"}
-          </Button>
-        </div>
-      )}
+          </>
+        )}
+        <input
+          type="file"
+          id="imageInput"
+          accept="image/*"
+          className="hidden"
+          onChange={handleChangeFile}
+        />
+      </div>
     </div>
   );
-}
+};
+
+export default FileUpload;

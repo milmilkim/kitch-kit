@@ -15,18 +15,6 @@ datasource db {
     directUrl = env("DIRECT_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
-}
-
 enum ContentCategory {
     NOVEL
     WEBTOON
@@ -50,7 +38,7 @@ model Content {
     artists     Json           
     aliases     Json           
     tags        Json            
-    image       String?         // 이미지 URL (나중에 업로드 구현)
+    image       String?         // 이미지 path
     
     // 위키 스타일 버전 관리
     version       Int      @default(1)
@@ -140,9 +128,7 @@ model User {
     image         String?
     accounts      Account[]
     sessions      Session[]
-    posts         Post[]
-    
-    // 컨텐츠 관계 (위키 스타일)
+
     contentsCreated     Content[] @relation("ContentCreatedBy")
     contentsLastEdited  Content[] @relation("ContentLastEditedBy")
     contentVersions     ContentVersion[]
