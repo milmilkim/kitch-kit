@@ -5,10 +5,13 @@ import { useState } from "react";
 
 interface FileUploadProps {
   onFileSelect: (file: File | null) => void;
+  currentImage?: string;
+  onImageRemove?: () => void;
 }
 
-const FileUpload = ({ onFileSelect }: FileUploadProps) => {
+const FileUpload = ({ onFileSelect, currentImage, onImageRemove }: FileUploadProps) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [hasNewFile, setHasNewFile] = useState(false);
 
   const handleChangeFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -22,6 +25,7 @@ const FileUpload = ({ onFileSelect }: FileUploadProps) => {
 
     // 부모에게 파일 전달
     onFileSelect(file);
+    setHasNewFile(true);
 
     // 미리보기 생성
     const reader = new FileReader();
@@ -31,6 +35,17 @@ const FileUpload = ({ onFileSelect }: FileUploadProps) => {
     reader.readAsDataURL(file);
   };
 
+  const handleRemoveImage = () => {
+    setImagePreview('');
+    setHasNewFile(false);
+    onFileSelect(null);
+    if (onImageRemove) {
+      onImageRemove();
+    }
+  };
+
+  const displayImage = imagePreview ?? (currentImage && !hasNewFile ? `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL ?? ""}/${currentImage}` : null);
+
   return (
     <div>
       <label className="mb-3 block text-sm font-semibold text-gray-700">
@@ -38,20 +53,32 @@ const FileUpload = ({ onFileSelect }: FileUploadProps) => {
       </label>
       <div
         className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-          imagePreview
+          displayImage
             ? "border-primary bg-gray-50"
             : "hover:border-primary border-gray-300"
         }`}
         onClick={() => document.getElementById("imageInput")?.click()}
       >
-        {imagePreview ? (
+        {displayImage ? (
           <div>
             <img
-              src={imagePreview}
+              src={displayImage}
               alt="Preview"
               className="mx-auto mb-3 max-h-48 max-w-48 rounded-lg"
             />
             <div className="text-sm text-gray-600">클릭하여 이미지 변경</div>
+            {(currentImage ?? hasNewFile) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveImage();
+                }}
+                className="mt-2 rounded px-3 py-1 text-sm text-white bg-primary"
+              >
+                이미지 제거
+              </button>
+            )}
           </div>
         ) : (
           <>

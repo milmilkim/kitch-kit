@@ -1,29 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { api } from "@/trpc/react";
-import Header from "../../components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type z } from "zod";
-import { CreateContentSchema } from "@/lib/validators/content";
+import { UpdateContentSchema } from "@/lib/validators/content";
 import type { ContentCategory } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import FileUpload from "@/components/file-upload";
 
 const categories: { id: ContentCategory; name: string; icon: string }[] = [
   { id: "NOVEL", name: "웹소설", icon: "📚" },
-  //   { id: "drama", name: "드라마", icon: "📺" },
   { id: "WEBTOON", name: "웹툰", icon: "🎨" },
   { id: "COMIC", name: "만화", icon: "💥" },
-  //   { id: "movie", name: "영화", icon: "🎬" },
-  //   { id: "music", name: "음반", icon: "🎵" },
-  //   { id: "book", name: "도서", icon: "📖" },
-  // { id: "game", name: "게임", icon: "🎮" },
-  //   { id: "other", name: "기타", icon: "📁" },
+  { id: "DRAMA", name: "드라마", icon: "📺" },
+  { id: "MOVIE", name: "영화", icon: "🎬" },
+  { id: "MUSIC", name: "음반", icon: "🎵" },
+  { id: "BOOK", name: "도서", icon: "📖" },
+  { id: "GAME", name: "게임", icon: "🎮" },
+  { id: "OTHER", name: "기타", icon: "📁" },
 ];
 
 // 컨텐츠 유형별 필드 정의
@@ -59,21 +58,32 @@ const categoryFields: Partial<
   },
 };
 
-export default function AddContentPage() {
+export default function EditContentPage() {
   const router = useRouter();
+  const params = useParams();
+  const contentId = params.id as string;
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const formSchema = CreateContentSchema;
+  // 기존 컨텐츠 데이터 조회
+  const { data: content, isLoading } = api.content.getById.useQuery({
+    id: contentId,
+  });
 
-  const form = useForm<z.infer<typeof CreateContentSchema>>({
+  const formSchema = UpdateContentSchema;
+
+  const form = useForm<z.infer<typeof UpdateContentSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      id: contentId,
       title: "",
       category: "NOVEL",
       year: "",
       platform: "",
       description: "",
       artists: [],
+      aliases: [],
+      tags: [],
+      image: "",
     },
   });
 
@@ -104,15 +114,18 @@ export default function AddContentPage() {
         }
 
         imageKey = key;
+      } else if (data.image) {
+        // 기존 이미지가 있으면 그대로 사용
+        imageKey = data.image;
       }
 
-      // 2. 컨텐츠 생성
+      // 2. 컨텐츠 업데이트
       const submitData = {
         ...data,
         image: imageKey,
       };
 
-      createContent.mutate(submitData);
+      updateContent.mutate(submitData);
     } catch (error) {
       alert("업로드 중 오류가 발생했습니다.");
       console.error(error);
@@ -122,13 +135,19 @@ export default function AddContentPage() {
   const selectedCategory = form.watch("category") ?? "NOVEL";
 
   // tRPC 뮤테이션 훅
-  const createContent = api.content.create.useMutation({
+  const utils = api.useUtils();
+
+  const updateContent = api.content.update.useMutation({
     onSuccess: () => {
-      alert("컨텐츠가 성공적으로 등록되었습니다! 🎉");
-      router.push("/contents");
+      // 캐시 무효화
+      void utils.content.getById.invalidate({ id: contentId });
+      void utils.content.getList.invalidate();
+      
+      alert("컨텐츠가 성공적으로 수정되었습니다! 🎉");
+      router.push(`/contents/${contentId}`);
     },
     onError: () => {
-      alert(`등록 실패`);
+      alert(`수정 실패`);
     },
   });
 
@@ -179,14 +198,77 @@ export default function AddContentPage() {
     }
   };
 
+  // 기존 데이터로 폼 초기화
+  useEffect(() => {
+    if (content) {
+      form.setValue("id", content.id);
+      form.setValue("title", content.title);
+      form.setValue("category", content.category);
+      form.setValue("year", content.year ?? "");
+      form.setValue("platform", content.platform ?? "");
+      form.setValue("description", content.description ?? "");
+      form.setValue("image", content.image ?? "");
+
+      // 배열 필드 초기화
+      const artistsData = content.artists as unknown;
+      const aliasesData = content.aliases as unknown;
+      const tagsData = content.tags as unknown;
+
+      if (Array.isArray(artistsData) && artistsData.length > 0) {
+        form.setValue("artists", artistsData);
+      } else {
+        form.setValue("artists", []);
+      }
+
+      if (Array.isArray(aliasesData) && aliasesData.length > 0) {
+        form.setValue("aliases", aliasesData);
+      } else {
+        form.setValue("aliases", []);
+      }
+
+      if (Array.isArray(tagsData) && tagsData.length > 0) {
+        form.setValue("tags", tagsData);
+      } else {
+        form.setValue("tags", []);
+      }
+    }
+  }, [content, form]);
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto max-w-4xl px-4">
+          <div className="flex min-h-[400px] items-center justify-center">
+            <div className="text-xl text-gray-500">로딩 중...</div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!content) {
+    return (
+      <main className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto max-w-4xl px-4">
+          <div className="flex min-h-[400px] flex-col items-center justify-center">
+            <div className="mb-4 text-6xl">❌</div>
+            <div className="mb-4 text-xl text-gray-500">컨텐츠를 찾을 수 없습니다.</div>
+            <Button variant="secondary" onClick={() => router.back()}>
+              뒤로가기
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
-      <Header />
       <main className="min-h-screen bg-gray-50 py-8">
         <div className="container mx-auto max-w-4xl px-4">
           <div className="rounded-xl bg-white p-8 shadow-lg">
             <h1 className="border-primary mb-8 inline-block border-b-4 pb-3 text-2xl font-bold text-gray-800">
-              ✨ 새 컨텐츠 추가
+              ✏️ 컨텐츠 수정
             </h1>
 
             <FormProvider {...form}>
@@ -226,7 +308,11 @@ export default function AddContentPage() {
                   </div>
                 </div>
 
-                <FileUpload onFileSelect={setSelectedFile} />
+                <FileUpload 
+                  onFileSelect={setSelectedFile} 
+                  currentImage={content.image ?? undefined}
+                  onImageRemove={() => form.setValue("image", "")}
+                />
 
                 {/* 기본 정보 */}
                 <div>
@@ -447,12 +533,13 @@ export default function AddContentPage() {
                   <Button
                     type="button"
                     variant="secondary"
-                    disabled={createContent.isPending}
+                    disabled={updateContent.isPending}
+                    onClick={() => router.back()}
                   >
                     취소
                   </Button>
-                  <Button type="submit" disabled={createContent.isPending}>
-                    {createContent.isPending ? "등록 중..." : "컨텐츠 등록"}
+                  <Button type="submit" disabled={updateContent.isPending}>
+                    {updateContent.isPending ? "수정 중..." : "컨텐츠 수정"}
                   </Button>
                 </div>
               </form>

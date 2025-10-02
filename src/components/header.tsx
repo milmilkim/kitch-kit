@@ -6,10 +6,10 @@ import Link from "next/link";
 export default function Header() {
   const { data: session } = useSession();
 
-  const navItems: { name: string; href: string }[] = [
-    { name: "홈", href: "/" },
-    { name: "컨텐츠 추가", href: "/add-content" },
-  ];
+  // const navItems: { name: string; href: string }[] = [
+  //   { name: "홈", href: "/" },
+  //   { name: "컨텐츠", href: "/contents" },
+  // ];
 
   return (
     <header className="gradient-primary w-full shadow-lg">
@@ -27,7 +27,7 @@ export default function Header() {
 
           {/* 네비게이션 메뉴 */}
           <nav className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-8">
+            {/* <div className="ml-10 flex items-baseline space-x-8">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
@@ -37,7 +37,7 @@ export default function Header() {
                   {item.name}
                 </Link>
               ))}
-            </div>
+            </div> */}
           </nav>
 
           {/* 프로필/로그인 */}
