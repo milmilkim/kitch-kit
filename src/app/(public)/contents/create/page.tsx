@@ -15,14 +15,14 @@ import FileUpload from "@/components/file-upload";
 
 const categories: { id: ContentCategory; name: string; icon: string }[] = [
   { id: "NOVEL", name: "웹소설", icon: "📚" },
-  //   { id: "drama", name: "드라마", icon: "📺" },
+  { id: "DRAMA", name: "드라마", icon: "📺" },
   { id: "WEBTOON", name: "웹툰", icon: "🎨" },
   { id: "COMIC", name: "만화", icon: "💥" },
-  //   { id: "movie", name: "영화", icon: "🎬" },
-  //   { id: "music", name: "음반", icon: "🎵" },
-  //   { id: "book", name: "도서", icon: "📖" },
-  // { id: "game", name: "게임", icon: "🎮" },
-  //   { id: "other", name: "기타", icon: "📁" },
+  { id: "MOVIE", name: "영화", icon: "🎬" },
+  { id: "MUSIC", name: "음반", icon: "🎵" },
+  { id: "BOOK", name: "도서", icon: "📖" },
+  { id: "GAME", name: "게임", icon: "🎮" },
+  { id: "OTHER", name: "기타", icon: "📁" },
 ];
 
 // 컨텐츠 유형별 필드 정의
