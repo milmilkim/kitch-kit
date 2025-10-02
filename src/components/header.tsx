@@ -27,17 +27,20 @@ export default function Header() {
 
           {/* 네비게이션 메뉴 */}
           <nav className="hidden md:block">
-            {/* <div className="ml-10 flex items-baseline space-x-8">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="header-button header-hover py-2 font-medium"
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div> */}
+            <div className="ml-10 flex items-baseline space-x-8">
+              <Link
+                href="/contents"
+                className="header-button header-hover py-2 font-medium"
+              >
+                컨텐츠
+              </Link>
+              <Link
+                href="/calendar"
+                className="header-button header-hover py-2 font-medium"
+              >
+                캘린더
+              </Link>
+            </div>
           </nav>
 
           {/* 프로필/로그인 */}

@@ -107,3 +107,107 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Calendar 커스텀 스타일 */
+.reading-calendar {
+  width: 100% !important;
+  border: none !important;
+  font-family: inherit;
+}
+
+.reading-calendar * {
+  border: none !important;
+}
+
+.reading-calendar .react-calendar__navigation {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.reading-calendar .react-calendar__navigation button {
+  min-width: 44px;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.reading-calendar .react-calendar__navigation button:enabled:hover {
+  background-color: #f3f4f6;
+}
+
+.reading-calendar .react-calendar__navigation button:disabled {
+  opacity: 0.3;
+}
+
+.reading-calendar .react-calendar__month-view__weekdays {
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.reading-calendar .react-calendar__month-view__weekdays__weekday {
+  padding: 0.75rem 0;
+}
+
+.reading-calendar .react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+.reading-calendar .react-calendar__tile {
+  position: relative;
+  padding: 0 !important;
+  background: transparent;
+  text-align: center;
+  line-height: 1;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.reading-calendar .react-calendar__tile:enabled:hover {
+  background-color: rgba(249, 250, 251, 0.8);
+}
+
+.reading-calendar .react-calendar__tile--active {
+  background-color: rgba(219, 234, 254, 0.8) !important;
+}
+
+.reading-calendar .react-calendar__tile--now {
+  background-color: rgba(254, 243, 199, 0.8) !important;
+}
+
+.reading-calendar .react-calendar__tile abbr {
+  position: relative;
+  z-index: 10;
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+}
+
+.reading-calendar .react-calendar__tile.has-record abbr {
+  color: #1f2937;
+}
+
+.reading-calendar .react-calendar__month-view__days {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.reading-calendar .react-calendar__month-view__days__day--neighboringMonth {
+  color: #d1d5db;
+  opacity: 0.5;
+}
